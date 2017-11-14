@@ -1173,7 +1173,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b4b91edac55c77a46b8926ccc8791e55, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  TimeScale: 15
+  TimeScale: 10
   TimeLimit: 50
   TotalTime: 0
   Generation: 1

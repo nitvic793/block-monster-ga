@@ -35,7 +35,7 @@ public class MonsterPopulation : MonoBehaviour
     {
         CreatePopulation();
         InstantiatePopulation();
-        InitiateFiles();
+        InitializeLogFiles();
         Application.runInBackground = true;
     }
 
@@ -172,7 +172,7 @@ public class MonsterPopulation : MonoBehaviour
 
     /// <summary>
     /// Select population based on Fitness and Crossover. 
-    /// <para>Note: Fitness uses a mix of Elitism and Roulette selection. Crossover is performed using Uniform Crossover with 50% chance. </para>
+    /// <para>Note: Uses a mix of Elitism and Roulette selection. Crossover is performed using Uniform Crossover with 50% chance. </para>
     /// </summary>
     private void SelectAndCrossover()
     {
@@ -195,14 +195,14 @@ public class MonsterPopulation : MonoBehaviour
         var fittest = PopulationGenomes[0];
         var secondFittest = PopulationGenomes[1];
         var firstChild = CrossoverGenes(fittest, secondFittest);
-        //var secondChild = CrossoverGenes(secondFittest, fittest);
+        var secondChild = CrossoverGenes(secondFittest, fittest);
 
-        //First child is crossed over using the top two genes. 
+        //Crossed over using the top two genes. 
         PopulationGenomes[0] = firstChild;
-        //PopulationGenomes[1] = secondFittest;
+        PopulationGenomes[1] = secondFittest;
 
         //Crossover rest of the population using Roulette Select.
-        for (var i = 1; i < PopulationGenomes.Count; ++i)
+        for (var i = 2; i < PopulationGenomes.Count; ++i)
         {
             var parent = PopulationGenomes[i];
             var selectedIndex = RouletteSelect(fitnessWeights);
@@ -231,7 +231,6 @@ public class MonsterPopulation : MonoBehaviour
             if (value <= 0)
             {
                 int returnValue = i;
-                //if (returnValue == 0 || returnValue == 1) returnValue = 3;
                 return returnValue;
             }
         }
@@ -280,7 +279,6 @@ public class MonsterPopulation : MonoBehaviour
     private float[] MutateGenes(float[] genes)
     {
         var mutatedGenome = genes;
-
         var randomIndex = UnityEngine.Random.Range(0, GENE_LENGTH);
         if (randomIndex % 3 == 0)
         {
@@ -292,11 +290,10 @@ public class MonsterPopulation : MonoBehaviour
             mutatedGenome[randomIndex] = UnityEngine.Random.Range(0F, 50F);
         }
 
-
         return mutatedGenome;
     }
 
-    private void InitiateFiles()
+    private void InitializeLogFiles()
     {
         GenerationDataFileName = "GenerationData.csv";
         FittestDataFileName = "Fittest.csv";
