@@ -1,0 +1,13 @@
+﻿extensions: designer.cs generated.cs
+extensions: .cs .cpp .h
+// Author: Nitish Victor (nithishvictor@gmail.com)
+extensions: .aspx .ascx
+<%-- 
+Author: Nitish Victor (nithishvictor@gmail.com)
+--%>
+extensions: .vb
+'Author: Nitish Victor (nithishvictor@gmail.com)
+extensions:  .xml .config .xsd
+<!--
+Author: Nitish Victor (nithishvictor@gmail.com)
+-->

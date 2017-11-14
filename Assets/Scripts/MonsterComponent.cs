@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿// Author: Nitish Victor (nithishvictor@gmail.com)
+using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
