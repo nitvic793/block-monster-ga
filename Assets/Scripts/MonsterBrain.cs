@@ -7,6 +7,7 @@ public class MonsterBrain : MonoBehaviour {
 
     private void OnCollisionEnter(Collision collision)
     {
+        //Just checks if the creature has fallen down. If so, it is considered to be dead.
         if(collision.gameObject.name == "Terrain")
         {
             GetComponentInParent<BlockMonster>().IsDead = true;
@@ -17,12 +18,10 @@ public class MonsterBrain : MonoBehaviour {
         }
     }
 
-    // Use this for initialization
     void Start () {
 		
 	}
 	
-	// Update is called once per frame
 	void Update () {
 		
 	}

@@ -1,8 +1,12 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 
+/// <summary>
+/// Controls all the population.
+/// </summary>
 public class MonsterPopulation : MonoBehaviour
 {
     public float TimeScale = 1F;
@@ -22,27 +26,34 @@ public class MonsterPopulation : MonoBehaviour
 
     const int GENE_LENGTH = 18;
     private BlockMonster FittestMonster = null;
-    // Use this for initialization
+    private string GenerationDataFileName = null;
+    private string FittestDataFileName = null;
+    private StreamWriter GenerationDataStream = null;
+    private StreamWriter FittestDataStream = null;
+
     void Start()
     {
         CreatePopulation();
         InstantiatePopulation();
+        InitiateFiles();
+        Application.runInBackground = true;
     }
 
-    // Update is called once per frame
     void Update()
     {
         Time.timeScale = TimeScale;
         TotalTime += Time.deltaTime;
         if (TotalTime >= TimeLimit)
         {
-            EvaluateFitness();
-            SelectAndCrossover();
-            Mutate();
+            EvaluateFitness(); //Check fitness
+            SelectAndCrossover(); //Select and crossover
+            Mutate();// Mutate population
+            LogGenerationData();
+            LogFittestData();
             DestroyPopulation();
             InstantiatePopulation();
             TotalTime = 0F;
-            Generation++;
+            Generation++; //Increment Generation counter
         }
         else
         {
@@ -57,6 +68,9 @@ public class MonsterPopulation : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Evaluates fitness of the population and maps them into a dictionary
+    /// </summary>
     private void EvaluateFitness()
     {
         fitnessDictionary.Clear();
@@ -74,7 +88,11 @@ public class MonsterPopulation : MonoBehaviour
         }
     }
 
-    private BlockMonster GetFittestMonster()
+    /// <summary>
+    /// Get the current fittest gene in the gene pool.
+    /// </summary>
+    /// <returns></returns>
+    public BlockMonster GetFittestMonster()
     {
         var fitness = 0F;
         var monsters = GetComponentsInChildren<BlockMonster>();
@@ -89,6 +107,10 @@ public class MonsterPopulation : MonoBehaviour
         return FittestMonster;
     }
 
+    /// <summary>
+    /// Create a random Gene
+    /// </summary>
+    /// <returns></returns>
     private float[] GenerateRandomGene()
     {
         var gene = new float[GENE_LENGTH];
@@ -107,6 +129,9 @@ public class MonsterPopulation : MonoBehaviour
         return gene;
     }
 
+    /// <summary>
+    /// Create population with random genes
+    /// </summary>
     private void CreatePopulation()
     {
         PopulationGenomes = new List<float[]>();
@@ -116,6 +141,9 @@ public class MonsterPopulation : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Instantiate population using the available genes
+    /// </summary>
     private void InstantiatePopulation()
     {
         foreach (var gene in PopulationGenomes)
@@ -129,6 +157,9 @@ public class MonsterPopulation : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Destroys all the instances of BlockMonster
+    /// </summary>
     private void DestroyPopulation()
     {
         foreach (var monster in Monsters)
@@ -136,9 +167,13 @@ public class MonsterPopulation : MonoBehaviour
             Destroy(monster);
         }
         Monsters.Clear();
+        fitnessDictionary.Clear();
     }
 
-
+    /// <summary>
+    /// Select population based on Fitness and Crossover. 
+    /// <para>Note: Fitness uses a mix of Elitism and Roulette selection. Crossover is performed using Uniform Crossover with 50% chance. </para>
+    /// </summary>
     private void SelectAndCrossover()
     {
         List<float[]> genomes = new List<float[]>();
@@ -153,16 +188,21 @@ public class MonsterPopulation : MonoBehaviour
         Array.Reverse(fitnessWeights);
         genomes.Reverse();
         PopulationGenomes.Clear();
-        PopulationGenomes = genomes;
+        PopulationGenomes = genomes; //Sorted genes
+
         Debug.Log("Fitness : " + fitnessWeights[0] + " Generation: " + Generation);
+
         var fittest = PopulationGenomes[0];
         var secondFittest = PopulationGenomes[1];
         var firstChild = CrossoverGenes(fittest, secondFittest);
-        var secondChild = CrossoverGenes(secondFittest, fittest);
-        PopulationGenomes[0] = firstChild;
-        PopulationGenomes[1] = secondFittest;
+        //var secondChild = CrossoverGenes(secondFittest, fittest);
 
-        for (var i = 2; i < PopulationGenomes.Count; ++i)
+        //First child is crossed over using the top two genes. 
+        PopulationGenomes[0] = firstChild;
+        //PopulationGenomes[1] = secondFittest;
+
+        //Crossover rest of the population using Roulette Select.
+        for (var i = 1; i < PopulationGenomes.Count; ++i)
         {
             var parent = PopulationGenomes[i];
             var selectedIndex = RouletteSelect(fitnessWeights);
@@ -174,8 +214,8 @@ public class MonsterPopulation : MonoBehaviour
     /// <summary>
     /// Returns the selected index based on the fitness weights(probabilities) - Fitness proportionate selection
     /// </summary>
-    /// <param name="fitnessWeights"></param>
-    /// <returns></returns>
+    /// <param name="fitnessWeights">Genome fitness values array</param>
+    /// <returns>Index of selected gene</returns>
     int RouletteSelect(float[] fitnessWeights)
     {
         float weightSum = 0;
@@ -188,14 +228,19 @@ public class MonsterPopulation : MonoBehaviour
         for (int i = 0; i < fitnessWeights.Length; i++)
         {
             value -= fitnessWeights[i];
-            if (value <= 0) return i;
+            if (value <= 0)
+            {
+                int returnValue = i;
+                //if (returnValue == 0 || returnValue == 1) returnValue = 3;
+                return returnValue;
+            }
         }
 
         return fitnessWeights.Length - 1;
     }
 
     /// <summary>
-    /// Uniform crossover
+    /// Performs an uniform crossover with 50% chance of getting the genes from either of the parents
     /// </summary>
     /// <param name="parent1">Parent 1</param>
     /// <param name="parent2">Parent 2</param>
@@ -212,31 +257,76 @@ public class MonsterPopulation : MonoBehaviour
         return childGenome;
     }
 
+    /// <summary>
+    /// Mutates the population based on the mutation probability configuration
+    /// </summary>
     private void Mutate()
     {
-        for (var i = 0; i < PopulationGenomes.Count; ++i)
+        for (var i = 1; i < PopulationGenomes.Count; ++i)
         {
             var random = UnityEngine.Random.Range(0F, 1F);
-            if (random > MutationProbality)
+            if (random < MutationProbality)
             {
                 PopulationGenomes[i] = MutateGenes(PopulationGenomes[i]);
             }
         }
     }
 
+    /// <summary>
+    /// Mutates a single gene
+    /// </summary>
+    /// <param name="genes">Gene to be mutated</param>
+    /// <returns></returns>
     private float[] MutateGenes(float[] genes)
     {
         var mutatedGenome = genes;
+
         var randomIndex = UnityEngine.Random.Range(0, GENE_LENGTH);
         if (randomIndex % 3 == 0)
         {
             mutatedGenome[randomIndex] = UnityEngine.Random.Range(0F, 10F);
+            mutatedGenome[randomIndex+1] = UnityEngine.Random.Range(0F, 50F);
         }
         else
         {
             mutatedGenome[randomIndex] = UnityEngine.Random.Range(0F, 50F);
         }
+
+
         return mutatedGenome;
+    }
+
+    private void InitiateFiles()
+    {
+        GenerationDataFileName = "GenerationData.csv";
+        FittestDataFileName = "Fittest.csv";
+        FileStream generationDataFile = File.Create(Environment.CurrentDirectory + "\\" + GenerationDataFileName);
+        FileStream fittestDataFile = File.Create(Environment.CurrentDirectory + "\\" + FittestDataFileName);
+        GenerationDataStream = new StreamWriter(generationDataFile);
+        FittestDataStream = new StreamWriter(fittestDataFile);
+        GenerationDataStream.WriteLine("generation,fitness,distanceFromTarget");
+        FittestDataStream.WriteLine("generation,fitness,distanceFromTarget");
+    }
+
+    private void LogGenerationData()
+    {
+        var monsters = GetComponentsInChildren<BlockMonster>();
+        foreach (var monster in monsters)
+        {
+            GenerationDataStream.WriteLine($"{Generation},{monster.GetFitness()},{monster.GetDistanceFromTarget()}");
+        }
+    }
+
+    private void LogFittestData()
+    {
+        var monster = GetFittestMonster();
+        FittestDataStream.WriteLine($"{Generation},{monster.GetFitness()},{monster.GetDistanceFromTarget()}");
+    }
+
+    void OnDestroy()
+    {
+        GenerationDataStream.Close();
+        FittestDataStream.Close();
     }
 
 }

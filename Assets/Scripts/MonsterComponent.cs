@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
 
+/// <summary>
+/// Controls the "limbs" of the creature
+/// </summary>
 public class MonsterComponent : MonoBehaviour
 {
-
     public float Thrust = 1F;
     public Vector3 Force;
     public Rigidbody rigidBody;
@@ -24,7 +26,7 @@ public class MonsterComponent : MonoBehaviour
         if (totalTime > 0.5F)
         {
             totalTime = 0;
-            rigidBody.AddForce(Force * Thrust);
+            rigidBody.AddForce(Force * Thrust); // Applies force to this limb.
         }
     }
 
@@ -35,7 +37,7 @@ public class MonsterComponent : MonoBehaviour
     void OnCollisionEnter(Collision collision)
     {
         if (!GetComponentInParent<BlockMonster>().IsDead)
-            GetComponentInParent<BlockMonster>().FitnessPoints += 0.01F;
+            GetComponentInParent<BlockMonster>().FitnessPoints += 0.01F; // Add fitness points for step taken
         //Debug.Log("On Ground " + GetComponentInParent<BlockMonster>().gameObject.name);
     }
 }
